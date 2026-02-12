@@ -9,9 +9,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.List;
 
+
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
-@RequestMapping("/api/auth")
-@CrossOrigin(origins = "*") // Allow Frontend
+@RequestMapping("/api/auth")// Allow Frontend
 public class AuthController {
 
     @Autowired

@@ -1,6 +1,7 @@
 package com.delivery.RouteOptima.controller;
 
 import com.delivery.RouteOptima.entity.Order;
+
 import com.delivery.RouteOptima.entity.User;
 import com.delivery.RouteOptima.repository.OrderRepository;
 import com.delivery.RouteOptima.repository.UserRepository;
@@ -15,9 +16,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 @RequestMapping("/api/orders")
-@CrossOrigin(origins = "*")
 public class OrderController {
 
     @Autowired

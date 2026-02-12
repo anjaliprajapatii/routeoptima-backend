@@ -10,9 +10,10 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
+
+@CrossOrigin(origins = "*", allowedHeaders = "*")
 @RestController
 @RequestMapping("/api/driver")
-@CrossOrigin(origins = "*")
 public class DriverController {
 
     @Autowired
