@@ -11,7 +11,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "http://localhost:5173") // Allow Frontend
+@CrossOrigin(origins = "*") // Allow Frontend
 public class AuthController {
 
     @Autowired
