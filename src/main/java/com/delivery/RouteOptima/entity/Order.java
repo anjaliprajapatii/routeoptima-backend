@@ -13,6 +13,7 @@ public class Order {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
+	private String adminEmail;
 	private String address;
 	private String customerName;
 	
