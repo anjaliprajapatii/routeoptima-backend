@@ -19,7 +19,6 @@ public class User {
 
     private String password;
 
-    // ✅ FIXED: Mobile field (Mandatory)
     @Column(unique = true, nullable = false) 
     private String mobile; 
 
@@ -28,9 +27,11 @@ public class User {
     
     private boolean isAvailable = true; // For Drivers
     
-    private Long myAdminId; // Links Driver to Admin
+    private Long myAdminId; // Links Driver to Admin ID
     
-    // ✅ ADDED BACK: Your required fields
+    // ✅ ADDED: This field is mandatory for isolation logic
+    private String adminEmail; // Links Driver to Admin Email
+    
     private String currentOrderId;
     private String currentOrderDetails;
     

@@ -29,43 +29,28 @@ public class OrderController {
     @Autowired
     private UserRepository userRepository;
 
-    // ==========================================
-    // 1. CREATE ORDER (Saves with adminEmail)
-    // ==========================================
     @PostMapping("/create")
     public ResponseEntity<Order> createOrder(@RequestBody Order order) {
-        // Backend ensure karega ki order create hote waqt saari details sahi hon
         return ResponseEntity.ok(orderService.createOrder(order));
     }
 
-    // ==========================================
-    // 2. GET MY ORDERS (Strict Isolation ✅)
-    // ==========================================
     @GetMapping("/my-orders")
     public ResponseEntity<List<Order>> getMyOrders(@RequestParam String adminEmail) {
-        // Sirf wahi orders aayenge jiska adminEmail match karega
         List<Order> orders = orderRepository.findByAdminEmailOrderByOrderDateDesc(adminEmail);
         return ResponseEntity.ok(orders);
     }
 
-    // ==========================================
-    // 3. UPDATE COORDINATES (Driver Manual Drop ✅)
-    // ==========================================
     @PutMapping("/update-coords/{id}")
     public ResponseEntity<Order> updateOrderCoords(@PathVariable Long id, @RequestBody Map<String, Double> coords) {
         Order order = orderRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
-        // Driver jab map par long-press karega, coordinates yahan update honge
         if(coords.containsKey("dropLat")) order.setDropLat(coords.get("dropLat"));
         if(coords.containsKey("dropLng")) order.setDropLng(coords.get("dropLng"));
         
         return ResponseEntity.ok(orderRepository.save(order));
     }
 
-    // ==========================================
-    // 4. ASSIGN DRIVER (Manual)
-    // ==========================================
     @PutMapping("/assign/{orderId}/{driverId}")
     public ResponseEntity<Order> assignDriver(@PathVariable Long orderId, @PathVariable Long driverId) {
         Order order = orderRepository.findById(orderId).orElseThrow();
@@ -82,14 +67,19 @@ public class OrderController {
     }
 
     // ==========================================
-    // 5. GET AVAILABLE DRIVERS (Nearest First)
+    // 5. GET AVAILABLE DRIVERS (Nearest + ADMIN ISOLATION ✅ FIXED)
     // ==========================================
     @GetMapping("/{orderId}/available-drivers")
-    public ResponseEntity<?> getAvailableDriversForOrder(@PathVariable Long orderId) {
+    public ResponseEntity<?> getAvailableDriversForOrder(
+            @PathVariable Long orderId, 
+            @RequestParam String adminEmail) { 
+        
         Order order = orderRepository.findById(orderId).orElseThrow();
         
         List<User> drivers = userRepository.findAll().stream()
-                .filter(u -> "DRIVER".equalsIgnoreCase(u.getRole()) && u.isAvailable())
+                .filter(u -> "DRIVER".equalsIgnoreCase(u.getRole()) 
+                        && u.isAvailable() 
+                        && adminEmail.equals(u.getAdminEmail())) // ✅ CHANGED TO getAdminEmail()
                 .collect(Collectors.toList());
 
         List<Map<String, Object>> result = drivers.stream().map(driver -> {
@@ -111,9 +101,26 @@ public class OrderController {
         return ResponseEntity.ok(result);
     }
 
-    // ==========================================
-    // 6. COMPLETE ORDER (Driver Action)
-    // ==========================================
+    @PutMapping("/reassign/{orderId}/{newDriverId}")
+    public ResponseEntity<Order> reassignDriver(@PathVariable Long orderId, @PathVariable Long newDriverId) {
+        Order order = orderRepository.findById(orderId).orElseThrow();
+        User newDriver = userRepository.findById(newDriverId).orElseThrow();
+
+        if (order.getAssignedDriver() != null) {
+            User oldDriver = order.getAssignedDriver();
+            oldDriver.setAvailable(true);
+            oldDriver.setCurrentOrderId(null);
+            userRepository.save(oldDriver);
+        }
+
+        order.setAssignedDriver(newDriver);
+        newDriver.setAvailable(false);
+        newDriver.setCurrentOrderId("ORD-" + order.getId());
+
+        userRepository.save(newDriver);
+        return ResponseEntity.ok(orderRepository.save(order));
+    }
+
     @PutMapping("/complete/{orderId}")
     public ResponseEntity<String> completeOrder(@PathVariable Long orderId) {
         Order order = orderRepository.findById(orderId).orElseThrow();
@@ -129,9 +136,6 @@ public class OrderController {
         return ResponseEntity.ok("Order Delivered Successfully");
     }
 
-    // ==========================================
-    // 7. DELETE ORDER
-    // ==========================================
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<String> deleteOrder(@PathVariable Long id) {
         Order order = orderRepository.findById(id).orElseThrow();
@@ -145,7 +149,6 @@ public class OrderController {
         return ResponseEntity.ok("Deleted");
     }
 
-    // Distance Helper (Haversine)
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {
         double R = 6371;
         double dLat = Math.toRadians(lat2 - lat1);
